@@ -12,7 +12,7 @@ BOOL FileExists(LPCTSTR szPath)
          !(dwAttrib  & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-typedef void (*DLL_t)(HWND hwnd, HINSTANCE hInst, LPCSTR lpszCmdLine, int nCmdShow);
+using DLL_t = void (WINAPI *)(HWND hwnd, HINSTANCE hInst, LPCSTR lpszCmdLine, int nCmdShow);
 
 int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
                       _In_opt_ HINSTANCE hPrevInstance,
