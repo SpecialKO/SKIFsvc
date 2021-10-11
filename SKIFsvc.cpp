@@ -3,6 +3,7 @@
 
 #include <Windows.h>
 #include <string>
+#include <shlwapi.h>
 
 BOOL FileExists(LPCTSTR szPath)
 {
@@ -19,27 +20,67 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
                       _In_     LPWSTR    lpCmdLine,
                       _In_     int       nCmdShow)
 {
-    UNREFERENCED_PARAMETER(hInstance);
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
-    UNREFERENCED_PARAMETER(nCmdShow);
+  UNREFERENCED_PARAMETER(hInstance);
+  UNREFERENCED_PARAMETER(hPrevInstance);
+  UNREFERENCED_PARAMETER(nCmdShow);
+
+  struct SKIFsvc_Signals {
+    BOOL Stop          = FALSE;
+    BOOL Start         = FALSE;
+  } _Signal;
+
+  _Signal.Stop =
+    StrStrIW (lpCmdLine, L"Stop")     != NULL;
+
+  _Signal.Start =
+    StrStrIW (lpCmdLine, L"Start")    != NULL;
 
 #if _WIN64
-    std::wstring DllPath = L"SpecialK64.dll";
+  std::wstring DllPath = L"SpecialK64.dll";
 #else
-    std::wstring DllPath = L"SpecialK32.dll";
+  std::wstring DllPath = L"SpecialK32.dll";
 #endif
 
-    if ( FileExists( (LR"(..\)"    + DllPath).c_str() ) )
-      DllPath       = LR"(..\)"    + DllPath;
+  if ( FileExists( (LR"(..\)"    + DllPath).c_str() ) )
+    DllPath       = LR"(..\)"    + DllPath;
     
-    auto SKModule = LoadLibrary( DllPath.c_str() );
+  auto SKModule = LoadLibrary( DllPath.c_str() );
 
-    if (SKModule != NULL)
+  if (SKModule != NULL)
+  {
+    auto RunDLL_InjectionManager = (DLL_t)GetProcAddress(SKModule, "RunDLL_InjectionManager");
+
+    if (_Signal.Stop || _Signal.Start)
     {
-      auto RunDLL_InjectionManager = (DLL_t)GetProcAddress(SKModule, "RunDLL_InjectionManager");
-      RunDLL_InjectionManager(0, 0, "Install", 0);
+      if (_Signal.Stop)
+        RunDLL_InjectionManager(0, 0, "Remove", 0);
+
+      if (_Signal.Start)
+        RunDLL_InjectionManager(0, 0, "Install", 0);
     }
 
-    return GetLastError();
+    else
+    {
+#if _WIN64
+      HANDLE hService = OpenEvent(EVENT_MODIFY_STATE, FALSE, LR"(Local\SK_GlobalHookTeardown64)");
+#else
+      HANDLE hService = OpenEvent(EVENT_MODIFY_STATE, FALSE, LR"(Local\SK_GlobalHookTeardown32)");
+#endif
+
+      if (hService != NULL)
+      {
+        SetEvent(hService);
+        CloseHandle(hService);
+      }
+
+      else
+      {
+        RunDLL_InjectionManager(0, 0, "Install", 0);
+      }
+    }
+
+    FreeLibrary(SKModule);
+  }
+
+  return GetLastError();
 }
