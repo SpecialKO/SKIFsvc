@@ -2,7 +2,6 @@
 //
 
 #include <Windows.h>
-#include <string>
 #include <shlwapi.h>
 
 BOOL FileExists(LPCTSTR szPath)
@@ -35,16 +34,37 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   _Signal.Start =
     StrStrIW (lpCmdLine, L"Start")    != NULL;
 
-#if _WIN64
-  std::wstring DllPath = L"SpecialK64.dll";
-#else
-  std::wstring DllPath = L"SpecialK32.dll";
-#endif
+  // Autostarting SKIFsvc through the registry autorun method
+  //   defaults the working directory to C:\WINDOWS\system32.
+  wchar_t wszCurrentPath[MAX_PATH + 2] = { };
+  GetCurrentDirectory (MAX_PATH, wszCurrentPath);
 
-  if ( FileExists( (LR"(..\)"    + DllPath).c_str() ) )
-    DllPath       = LR"(..\)"    + DllPath;
+  // We only change if \Windows\sys is discovered to allow users
+  //   weird setups where the service hosts are located elsewhere.
+  if (StrStrIW (wszCurrentPath, LR"(\Windows\sys)"))
+  {
+    wchar_t wszCorrectPath[MAX_PATH + 2] = { };
+    HMODULE hModSelf = GetModuleHandleW (nullptr);
+    GetModuleFileNameW  (hModSelf, wszCorrectPath, MAX_PATH);
+    PathRemoveFileSpecW (wszCorrectPath);
+    SetCurrentDirectory (wszCorrectPath);
+  }
+
+  // Past this point we can assume to be in the proper working directory.
+
+#if _WIN64
+  PCWSTR wszDllPath  = L"SpecialK64.dll";
+
+  if (FileExists (LR"(..\SpecialK64.dll)"))
+    wszDllPath =  LR"(..\SpecialK64.dll)";
+#else
+  PCWSTR wszDllPath  = L"SpecialK32.dll";
+
+  if (FileExists (LR"(..\SpecialK32.dll)"))
+    wszDllPath =  LR"(..\SpecialK32.dll)";
+#endif
     
-  auto SKModule = LoadLibrary( DllPath.c_str() );
+  auto SKModule = LoadLibrary (wszDllPath);
 
   if (SKModule != NULL)
   {
