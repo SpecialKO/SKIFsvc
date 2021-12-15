@@ -3,6 +3,7 @@
 
 #include <Windows.h>
 #include <shlwapi.h>
+#include <string>
 
 BOOL FileExists(LPCTSTR szPath)
 {
@@ -34,12 +35,12 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   _Signal.Start =
     StrStrIW (lpCmdLine, L"Start")    != NULL;
 
-  // Autostarting SKIFsvc through the registry autorun method
+  // Autostarting SKIFsvc through the registry autorun method 
   //   defaults the working directory to C:\WINDOWS\system32.
   wchar_t wszCurrentPath[MAX_PATH + 2] = { };
   GetCurrentDirectory (MAX_PATH, wszCurrentPath);
 
-  // We only change if \Windows\sys is discovered to allow users
+  // We only change if \Windows\sys is discovered to allow users 
   //   weird setups where the service hosts are located elsewhere.
   if (StrStrIW (wszCurrentPath, LR"(\Windows\sys)"))
   {
@@ -71,10 +72,10 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
     auto RunDLL_InjectionManager = (DLL_t)GetProcAddress(SKModule, "RunDLL_InjectionManager");
 
     if (_Signal.Stop)
-      RunDLL_InjectionManager(0, 0, "Remove", 0);
+      RunDLL_InjectionManager(0, 0, "Remove", SW_HIDE);
 
     else if (_Signal.Start)
-      RunDLL_InjectionManager(0, 0, "Install", 0);
+      RunDLL_InjectionManager(0, 0, "Install", SW_HIDE);
 
     else
     {
@@ -97,6 +98,10 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
     }
 
     FreeLibrary(SKModule);
+  }
+  else
+  {
+    MessageBox (NULL, (L"Could not locate " + std::wstring(wszDllPath) + L" in the working directory\n" + std::wstring(wszCurrentPath)).c_str(), L"Error", MB_OK | MB_ICONERROR);
   }
 
   return GetLastError();
