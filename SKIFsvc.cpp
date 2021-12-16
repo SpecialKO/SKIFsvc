@@ -64,45 +64,57 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   if (FileExists (LR"(..\SpecialK32.dll)"))
     wszDllPath =  LR"(..\SpecialK32.dll)";
 #endif
-    
+
+  DWORD lastError = 0;
+  SetLastError (NO_ERROR);
+
   auto SKModule = LoadLibrary (wszDllPath);
 
   if (SKModule != NULL)
   {
-    auto RunDLL_InjectionManager = (DLL_t)GetProcAddress(SKModule, "RunDLL_InjectionManager");
+    auto RunDLL_InjectionManager = (DLL_t)GetProcAddress (SKModule, "RunDLL_InjectionManager");
 
     if (_Signal.Stop)
-      RunDLL_InjectionManager(0, 0, "Remove", SW_HIDE);
+      RunDLL_InjectionManager (0, 0, "Remove", SW_HIDE);
 
     else if (_Signal.Start)
-      RunDLL_InjectionManager(0, 0, "Install", SW_HIDE);
+      RunDLL_InjectionManager (0, 0, "Install", SW_HIDE);
 
     else
     {
 #if _WIN64
-      HANDLE hService = OpenEvent(EVENT_MODIFY_STATE, FALSE, LR"(Local\SK_GlobalHookTeardown64)");
+      HANDLE hService = OpenEvent (EVENT_MODIFY_STATE, FALSE, LR"(Local\SK_GlobalHookTeardown64)");
 #else
-      HANDLE hService = OpenEvent(EVENT_MODIFY_STATE, FALSE, LR"(Local\SK_GlobalHookTeardown32)");
+      HANDLE hService = OpenEvent (EVENT_MODIFY_STATE, FALSE, LR"(Local\SK_GlobalHookTeardown32)");
 #endif
 
       if (hService != NULL)
       {
-        SetEvent(hService);
-        CloseHandle(hService);
+        SetEvent    (hService);
+        CloseHandle (hService);
       }
 
       else
       {
-        RunDLL_InjectionManager(0, 0, "Install", 0);
+        RunDLL_InjectionManager (0, 0, "Install", 0);
       }
     }
 
-    FreeLibrary(SKModule);
+    FreeLibrary (SKModule);
   }
   else
   {
-    MessageBox (NULL, (L"Could not locate " + std::wstring(wszDllPath) + L" in the working directory\n" + std::wstring(wszCurrentPath)).c_str(), L"Error", MB_OK | MB_ICONERROR);
+    lastError = GetLastError ( );
+    wchar_t wsLastError[256];
+    
+    FormatMessageW (
+      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+      NULL, lastError, MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
+      wsLastError, (sizeof (wsLastError) / sizeof (wchar_t)), NULL
+    );
+
+    MessageBox (NULL, (L"There was a problem starting " + std::wstring(wszDllPath) + L"\n\n" + wsLastError).c_str(), L"SKIFsvc", MB_OK | MB_ICONERROR);
   }
 
-  return GetLastError();
+  return lastError;
 }
