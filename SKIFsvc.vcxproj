@@ -47,13 +47,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>F:\Aemony\Documents\My Mods\SpecialK\Servlet\</OutDir>
+    <OutDir>%USERPROFILE%\Documents\My Mods\SpecialK\Servlet\</OutDir>
     <TargetName>SKIFsvc32</TargetName>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>F:\Aemony\Documents\My Mods\SpecialK\Servlet\</OutDir>
+    <OutDir>%USERPROFILE%\Documents\My Mods\SpecialK\Servlet\</OutDir>
     <TargetName>SKIFsvc64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
