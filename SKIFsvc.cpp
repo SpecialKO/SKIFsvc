@@ -158,6 +158,33 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
                           L"Unsupported Operation", MB_ICONERROR);
     }
 
+    else if (_Signal.InstallDrivers)
+    {
+      if (InstallDrivers != nullptr)
+      {
+          InstallDrivers (); // Initial Driver Setup (if not already installed)
+          InstallDrivers (); // Start the Service
+      }
+
+      else
+      {
+        MessageBox ( NULL, SK_IsAdmin () ? L"Driver Install Unsupported"
+                                         : L"Administrator Privilege Required",
+                             L"Unsupported Operation", MB_ICONERROR );
+      }
+    }
+
+    else if (_Signal.UninstallDrivers)
+    {
+      // Allow uninstall even if not admin
+      if (UninstallDrivers != nullptr)
+          UninstallDrivers (); // Stop the Driver Service -and- Uninstall
+
+      else
+        MessageBox (NULL, L"Driver Uninstall Unsupported",
+                          L"Unsupported Operation", MB_ICONERROR);
+    }
+
     else
     {
 #if _WIN64
