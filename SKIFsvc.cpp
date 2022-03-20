@@ -9,8 +9,41 @@ BOOL FileExists(LPCTSTR szPath)
 {
   DWORD dwAttrib = GetFileAttributes(szPath);
 
-  return  (dwAttrib != INVALID_FILE_ATTRIBUTES && 
+  return  (dwAttrib != INVALID_FILE_ATTRIBUTES &&
          !(dwAttrib  & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+bool
+SK_IsAdmin (void)
+{
+  bool   bRet = false;
+  HANDLE hToken (INVALID_HANDLE_VALUE);
+
+  if ( OpenProcessToken ( GetCurrentProcess (),
+                            TOKEN_QUERY,
+                              &hToken )
+     )
+  {
+    TOKEN_ELEVATION Elevation = { };
+
+    DWORD cbSize =
+      sizeof (TOKEN_ELEVATION);
+
+    if ( GetTokenInformation ( hToken,
+                                 TokenElevation,
+                                   &Elevation,
+                                     sizeof (Elevation),
+                                       &cbSize )
+       )
+    {
+      bRet =
+        ( Elevation.TokenIsElevated != 0 );
+    }
+
+    CloseHandle (hToken);
+  }
+
+  return bRet;
 }
 
 using DLL_t = void (WINAPI *)(HWND hwnd, HINSTANCE hInst, LPCSTR lpszCmdLine, int nCmdShow);
@@ -25,8 +58,10 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   UNREFERENCED_PARAMETER(nCmdShow);
 
   struct SKIFsvc_Signals {
-    BOOL Stop          = FALSE;
-    BOOL Start         = FALSE;
+    BOOL Stop             = FALSE;
+    BOOL Start            = FALSE;
+    BOOL InstallDrivers   = FALSE;
+    BOOL UninstallDrivers = FALSE;
   } _Signal;
 
   _Signal.Stop =
@@ -35,12 +70,21 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   _Signal.Start =
     StrStrIW (lpCmdLine, L"Start")    != NULL;
 
-  // Autostarting SKIFsvc through the registry autorun method 
+  _Signal.UninstallDrivers =
+    StrStrIW (lpCmdLine, L"UninstallDrivers") != NULL;
+
+  if (! _Signal.UninstallDrivers)
+  {
+    _Signal.InstallDrivers =
+      StrStrIW (lpCmdLine, L"InstallDrivers") != NULL;
+  }
+
+  // Autostarting SKIFsvc through the registry autorun method
   //   defaults the working directory to C:\WINDOWS\system32.
   wchar_t wszCurrentPath[MAX_PATH + 2] = { };
   GetCurrentDirectory (MAX_PATH, wszCurrentPath);
 
-  // We only change if \Windows\sys is discovered to allow users 
+  // We only change if \Windows\sys is discovered to allow users
   //   weird setups where the service hosts are located elsewhere.
   if (StrStrIW (wszCurrentPath, LR"(\Windows\sys)"))
   {
@@ -72,6 +116,13 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
 
   if (SKModule != NULL)
   {
+    using InstallFunc_pfn = void (*)(void);
+
+    auto InstallDrivers =
+        (InstallFunc_pfn)GetProcAddress (SKModule, "SK_WinRing0_Install"),
+       UninstallDrivers =
+        (InstallFunc_pfn)GetProcAddress (SKModule, "SK_WinRing0_Uninstall");
+
     auto RunDLL_InjectionManager = (DLL_t)GetProcAddress (SKModule, "RunDLL_InjectionManager");
 
     if (_Signal.Stop)
@@ -79,6 +130,60 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
 
     else if (_Signal.Start)
       RunDLL_InjectionManager (0, 0, "Install", SW_HIDE);
+
+    else if (_Signal.InstallDrivers)
+    {
+      if (InstallDrivers != nullptr)
+      {
+          InstallDrivers (); // Initial Driver Setup (if not already installed)
+          InstallDrivers (); // Start the Service
+      }
+
+      else
+      {
+        MessageBox ( NULL, SK_IsAdmin () ? L"Driver Install Unsupported"
+                                         : L"Administrator Privilege Required",
+                             L"Unsupported Operation", MB_ICONERROR );
+      }
+    }
+
+    else if (_Signal.UninstallDrivers)
+    {
+      // Allow uninstall even if not admin
+      if (UninstallDrivers != nullptr)
+          UninstallDrivers (); // Stop the Driver Service -and- Uninstall
+
+      else
+        MessageBox (NULL, L"Driver Uninstall Unsupported",
+                          L"Unsupported Operation", MB_ICONERROR);
+    }
+
+    else if (_Signal.InstallDrivers)
+    {
+      if (InstallDrivers != nullptr)
+      {
+          InstallDrivers (); // Initial Driver Setup (if not already installed)
+          InstallDrivers (); // Start the Service
+      }
+
+      else
+      {
+        MessageBox ( NULL, SK_IsAdmin () ? L"Driver Install Unsupported"
+                                         : L"Administrator Privilege Required",
+                             L"Unsupported Operation", MB_ICONERROR );
+      }
+    }
+
+    else if (_Signal.UninstallDrivers)
+    {
+      // Allow uninstall even if not admin
+      if (UninstallDrivers != nullptr)
+          UninstallDrivers (); // Stop the Driver Service -and- Uninstall
+
+      else
+        MessageBox (NULL, L"Driver Uninstall Unsupported",
+                          L"Unsupported Operation", MB_ICONERROR);
+    }
 
     else
     {
@@ -106,7 +211,7 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   {
     lastError = GetLastError ( );
     wchar_t wsLastError[256];
-    
+
     FormatMessageW (
       FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
       NULL, lastError, MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
