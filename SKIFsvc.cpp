@@ -58,33 +58,23 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   // Past this point we can assume to be in the proper working directory.
 
 #if _WIN64
-  PCWSTR wszDllPath  = (_Signal.AVX2) ? L"SpecialK64-AVX2.dll" : L"SpecialK64.dll";
 
-  if (_Signal.AVX2)
-  {
-    if (FileExists(LR"(..\SpecialK64-AVX2.dll)"))
-      wszDllPath = LR"(..\SpecialK64-AVX2.dll)";
-  }
+  PCWSTR wszDllPath  = 
+    (_Signal.AVX2) ? LR"(..\AVX2\SpecialK64.dll)"
+                   :           L"SpecialK64.dll";
 
-  else
-  {
-    if (FileExists(LR"(..\SpecialK64.dll)"))
-      wszDllPath = LR"(..\SpecialK64.dll)";
-  }
+  if (! _Signal.AVX2 && FileExists (LR"(..\SpecialK64.dll)"))
+    wszDllPath = LR"(..\SpecialK64.dll)";
+
 #else
-  PCWSTR wszDllPath  = (_Signal.AVX2) ? L"SpecialK32-AVX2.dll" : L"SpecialK32.dll";
 
-  if (_Signal.AVX2)
-  {
-    if (FileExists(LR"(..\SpecialK32-AVX2.dll)"))
-      wszDllPath = LR"(..\SpecialK32-AVX2.dll)";
-  }
+  PCWSTR wszDllPath  =
+    (_Signal.AVX2) ? LR"(..\AVX2\SpecialK32.dll)"
+                   :           L"SpecialK32.dll";
 
-  else
-  {
-    if (FileExists(LR"(..\SpecialK32.dll)"))
-      wszDllPath = LR"(..\SpecialK32.dll)";
-  }
+  if (! _Signal.AVX2 && FileExists (LR"(..\SpecialK32.dll)"))
+    wszDllPath = LR"(..\SpecialK32.dll)";
+
 #endif
 
   DWORD lastError = 0;
