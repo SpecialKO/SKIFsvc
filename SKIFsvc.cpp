@@ -27,7 +27,6 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   struct SKIFsvc_Signals {
     BOOL Stop          = FALSE;
     BOOL Start         = FALSE;
-    BOOL AVX2          = FALSE;
   } _Signal;
 
   _Signal.Stop =
@@ -36,13 +35,10 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   _Signal.Start =
     StrStrIW (lpCmdLine, L"Start")    != NULL;
 
-  _Signal.AVX2 =
-    StrStrIW (lpCmdLine, L"AVX2")     != NULL;
-
   // Autostarting SKIFsvc through the registry autorun method 
   //   defaults the working directory to C:\WINDOWS\system32.
   wchar_t wszCurrentPath[MAX_PATH + 2] = { };
-  GetCurrentDirectory (MAX_PATH, wszCurrentPath);
+  GetCurrentDirectory   (MAX_PATH, wszCurrentPath);
 
   // We only change if \Windows\sys is discovered to allow users 
   //   weird setups where the service hosts are located elsewhere.
@@ -58,23 +54,13 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   // Past this point we can assume to be in the proper working directory.
 
 #if _WIN64
-
   PCWSTR wszDllPath  = 
-    (_Signal.AVX2) ? LR"(..\AVX2\SpecialK64.dll)"
-                   :           L"SpecialK64.dll";
-
-  if (! _Signal.AVX2 && FileExists (LR"(..\SpecialK64.dll)"))
-    wszDllPath = LR"(..\SpecialK64.dll)";
-
+    (FileExists (LR"(..\SpecialK64.dll)")) ? LR"(..\SpecialK64.dll)"
+                                           :      L"SpecialK64.dll";
 #else
-
   PCWSTR wszDllPath  =
-    (_Signal.AVX2) ? LR"(..\AVX2\SpecialK32.dll)"
-                   :           L"SpecialK32.dll";
-
-  if (! _Signal.AVX2 && FileExists (LR"(..\SpecialK32.dll)"))
-    wszDllPath = LR"(..\SpecialK32.dll)";
-
+    (FileExists (LR"(..\SpecialK32.dll)")) ? LR"(..\SpecialK32.dll)"
+                                           :      L"SpecialK32.dll";
 #endif
 
   DWORD lastError = 0;
