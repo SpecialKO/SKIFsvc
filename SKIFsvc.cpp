@@ -5,9 +5,9 @@
 #include <shlwapi.h>
 #include <string>
 
-BOOL FileExists(LPCTSTR szPath)
+BOOL FileExists (LPCTSTR szPath)
 {
-  DWORD dwAttrib = GetFileAttributes(szPath);
+  DWORD dwAttrib = GetFileAttributes (szPath);
 
   return  (dwAttrib != INVALID_FILE_ATTRIBUTES && 
          !(dwAttrib  & FILE_ATTRIBUTE_DIRECTORY));
@@ -20,13 +20,16 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
                       _In_     LPWSTR    lpCmdLine,
                       _In_     int       nCmdShow)
 {
-  UNREFERENCED_PARAMETER(hInstance);
-  UNREFERENCED_PARAMETER(hPrevInstance);
-  UNREFERENCED_PARAMETER(nCmdShow);
+  UNREFERENCED_PARAMETER (hInstance);
+  UNREFERENCED_PARAMETER (hPrevInstance);
+  UNREFERENCED_PARAMETER (nCmdShow);
 
   struct SKIFsvc_Signals {
     BOOL Stop          = FALSE;
     BOOL Start         = FALSE;
+#ifndef _WIN64
+    BOOL Proxy64       = FALSE;
+#endif
   } _Signal;
 
   _Signal.Stop =
@@ -34,6 +37,10 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
 
   _Signal.Start =
     StrStrIW (lpCmdLine, L"Start")    != NULL;
+#ifndef _WIN64
+  _Signal.Proxy64 =
+    StrStrIW (lpCmdLine, L"Proxy64")  != NULL;
+#endif
 
   // Autostarting SKIFsvc through the registry autorun method 
   //   defaults the working directory to C:\WINDOWS\system32.
@@ -50,6 +57,24 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
     PathRemoveFileSpecW (wszCorrectPath);
     SetCurrentDirectory (wszCorrectPath);
   }
+
+#ifndef _WIN64
+  if (_Signal.Proxy64)
+  {
+    SHELLEXECUTEINFOW
+    sexi              = { };
+    sexi.cbSize       = sizeof (SHELLEXECUTEINFOW);
+    sexi.lpVerb       = L"OPEN";
+    sexi.lpFile       = L"SKIFsvc64.exe";
+    sexi.lpParameters = lpCmdLine;
+  //sexi.lpDirectory  = L"Servlet";
+    sexi.nShow        = SW_HIDE;
+    sexi.fMask        = SEE_MASK_FLAG_NO_UI | /* SEE_MASK_NOCLOSEPROCESS | */
+                        SEE_MASK_NOASYNC    | SEE_MASK_NOZONECHECKS;
+
+    ShellExecuteExW (&sexi);
+  }
+#endif
 
   // Past this point we can assume to be in the proper working directory.
 
