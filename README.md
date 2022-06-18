@@ -8,8 +8,8 @@ Used by SKIF to hold the global injection service in an easy-to-locate process.
 
 ## Command line arguments
 
-| Argument  | What it does |
-| ------------- | ------------- |
+| Argument  | What it does |
+| -------------: | ------------- |
 | `<empty>`  | SKIFsvc will attempt to detect if an instance of the service is currently running, and act based on that.  |
 | `Start`  | Starts an instance of the service.  |
 | `Stop`  | Stops any running instances of the service. Can also be used to attempt to force-eject leftover injections of Special K.  |
