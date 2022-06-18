@@ -98,7 +98,7 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
     auto RunDLL_InjectionManager = (DLL_t)GetProcAddress (SKModule, "RunDLL_InjectionManager");
 
     if (_Signal.Stop)
-      RunDLL_InjectionManager (0, 0, "Remove", SW_HIDE);
+      RunDLL_InjectionManager (0, 0, "Remove",  SW_HIDE);
 
     else if (_Signal.Start)
       RunDLL_InjectionManager (0, 0, "Install", SW_HIDE);
@@ -119,7 +119,7 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
 
       else
       {
-        RunDLL_InjectionManager (0, 0, "Install", 0);
+        RunDLL_InjectionManager (0, 0, "Install", SW_HIDE);
       }
     }
 
