@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <shlwapi.h>
 #include <string>
+#include <memory>
 
 BOOL FileExists (LPCTSTR szPath)
 {
@@ -11,6 +12,42 @@ BOOL FileExists (LPCTSTR szPath)
 
   return  (dwAttrib != INVALID_FILE_ATTRIBUTES && 
          !(dwAttrib  & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+// Suppress warnings about _vsnwprintf
+#pragma warning(disable:4996)
+std::wstring
+__cdecl
+SK_FormatStringW (wchar_t const* const _Format, ...)
+{
+  size_t len = 0;
+
+  va_list   _ArgList;
+  va_start (_ArgList, _Format);
+  {
+    len =
+      _vsnwprintf ( nullptr, 0, _Format, _ArgList ) + 1ui64;
+  }
+  va_end   (_ArgList);
+
+  size_t alloc_size =
+    sizeof (wchar_t) * (len + 2);
+
+  std::unique_ptr <wchar_t []> pData =
+    std::make_unique <wchar_t []> (alloc_size);
+
+  if (! pData)
+    return std::wstring ();
+
+  va_start (_ArgList, _Format);
+  {
+    len =
+      _vsnwprintf ( (wchar_t *)pData.get (), len + 1, _Format, _ArgList );
+  }
+  va_end   (_ArgList);
+
+  return
+    pData.get ();
 }
 
 using DLL_t = void (WINAPI *)(HWND hwnd, HINSTANCE hInst, LPCSTR lpszCmdLine, int nCmdShow);
@@ -47,18 +84,45 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   wchar_t wszCurrentPath[MAX_PATH + 2] = { };
   GetCurrentDirectory   (MAX_PATH, wszCurrentPath);
 
+  // Executable path
+  wchar_t wszExeFolder[MAX_PATH + 2] = { };
+  HMODULE hModSelf = GetModuleHandleW (nullptr);
+  GetModuleFileNameW  (hModSelf, wszExeFolder, MAX_PATH);
+  PathRemoveFileSpecW (wszExeFolder);
+
   // We only change if \Windows\sys is discovered to allow users 
   //   weird setups where the service hosts are located elsewhere.
   if (StrStrIW (wszCurrentPath, LR"(\Windows\sys)"))
+    SetCurrentDirectory (wszExeFolder);
+
+  // Now we have to try and locate the DLL file...
+#if _WIN64
+  std::wstring wsDllFile = L"SpecialK64.dll";
+#else
+  std::wstring wsDllFile = L"SpecialK32.dll";
+#endif
+
+  std::wstring wsDllPath;
+  std::wstring wsTestPaths[] = { 
+                                      wsDllFile,
+                          LR"(..\)" + wsDllFile,
+    SK_FormatStringW (LR"(%ws\%ws)",    wszExeFolder, wsDllFile.c_str()),
+    SK_FormatStringW (LR"(%ws\..\%ws)", wszExeFolder, wsDllFile.c_str()),
+  };
+
+  for (auto& path : wsTestPaths)
   {
-    wchar_t wszCorrectPath[MAX_PATH + 2] = { };
-    HMODULE hModSelf = GetModuleHandleW (nullptr);
-    GetModuleFileNameW  (hModSelf, wszCorrectPath, MAX_PATH);
-    PathRemoveFileSpecW (wszCorrectPath);
-    SetCurrentDirectory (wszCorrectPath);
+    if (FileExists (path.c_str()))
+    {
+      wsDllPath = path;
+      break;
+    }
   }
 
+  // At this point we should have an idea of where the DLL file is located
+
 #ifndef _WIN64
+  // For newer versions we allow proxying the call to our 64-bit sibling
   if (_Signal.Proxy64)
   {
     SHELLEXECUTEINFOW
@@ -67,7 +131,7 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
     sexi.lpVerb       = L"OPEN";
     sexi.lpFile       = L"SKIFsvc64.exe";
     sexi.lpParameters = lpCmdLine;
-  //sexi.lpDirectory  = L"Servlet";
+  //sexi.lpDirectory  = L"Servlet"; // Be sure to proxy our own working directory to SKIFsvc64
     sexi.nShow        = SW_HIDE;
     sexi.fMask        = SEE_MASK_FLAG_NO_UI | /* SEE_MASK_NOCLOSEPROCESS | */
                         SEE_MASK_NOASYNC    | SEE_MASK_NOZONECHECKS;
@@ -76,22 +140,10 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   }
 #endif
 
-  // Past this point we can assume to be in the proper working directory.
-
-#if _WIN64
-  PCWSTR wszDllPath  = 
-    (FileExists (LR"(..\SpecialK64.dll)")) ? LR"(..\SpecialK64.dll)"
-                                           :      L"SpecialK64.dll";
-#else
-  PCWSTR wszDllPath  =
-    (FileExists (LR"(..\SpecialK32.dll)")) ? LR"(..\SpecialK32.dll)"
-                                           :      L"SpecialK32.dll";
-#endif
-
   DWORD lastError = 0;
   SetLastError (NO_ERROR);
 
-  auto SKModule = LoadLibrary (wszDllPath);
+  auto SKModule = LoadLibrary (wsDllPath.c_str());
 
   if (SKModule != NULL)
   {
@@ -136,7 +188,8 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
       wsLastError, (sizeof (wsLastError) / sizeof (wchar_t)), NULL
     );
 
-    MessageBox (NULL, (L"There was a problem starting " + std::wstring(wszDllPath) + L"\n\n" + wsLastError).c_str(), L"SKIFsvc", MB_OK | MB_ICONERROR);
+    std::wstring wsErrorMsg = L"There was a problem starting " + wsDllFile + L"\n\n" + wsLastError;
+    MessageBox (NULL, wsErrorMsg.c_str(), L"SKIFsvc", MB_OK | MB_ICONERROR);
   }
 
   return lastError;
