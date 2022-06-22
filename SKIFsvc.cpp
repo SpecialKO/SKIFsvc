@@ -137,6 +137,8 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
                         SEE_MASK_NOASYNC    | SEE_MASK_NOZONECHECKS;
 
     ShellExecuteExW (&sexi);
+
+    Sleep (50);
   }
 #endif
 
@@ -174,6 +176,8 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
         RunDLL_InjectionManager (0, 0, "Install", SW_HIDE);
       }
     }
+
+    Sleep (50);
 
     FreeLibrary (SKModule);
   }
