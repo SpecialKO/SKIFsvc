@@ -14,6 +14,26 @@ BOOL FileExists (LPCTSTR szPath)
          !(dwAttrib  & FILE_ATTRIBUTE_DIRECTORY));
 }
 
+void
+ShowErrorMessage (DWORD lastError, std::wstring preMsg = L"", std::wstring winTitle = L"")
+{
+  LPWSTR messageBuffer = nullptr;
+
+  size_t size = FormatMessageW (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                NULL, lastError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
+
+  std::wstring message (messageBuffer, size);
+  LocalFree (messageBuffer);
+
+  message.erase (std::remove (message.begin(), message.end(), '\n'), message.end());
+
+  if (! preMsg.empty())
+    preMsg += L"\n\n";
+
+  MessageBox (NULL, (preMsg + L"[" +std::to_wstring(lastError) + L"] " + message).c_str(),
+                     winTitle.c_str(), MB_OK | MB_ICONERROR);
+}
+
 // Suppress warnings about _vsnwprintf
 #pragma warning(disable:4996)
 std::wstring
@@ -142,8 +162,8 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   }
 #endif
 
-  DWORD lastError = 0;
-  SetLastError (NO_ERROR);
+  DWORD lastError = NO_ERROR;
+  SetLastError (    NO_ERROR);
 
   auto SKModule = LoadLibrary (wsDllPath.c_str());
 
@@ -184,16 +204,7 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   else
   {
     lastError = GetLastError ( );
-    wchar_t wsLastError[256];
-    
-    FormatMessageW (
-      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-      NULL, lastError, MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
-      wsLastError, (sizeof (wsLastError) / sizeof (wchar_t)), NULL
-    );
-
-    std::wstring wsErrorMsg = L"There was a problem starting " + wsDllFile + L"\n\n" + wsLastError;
-    MessageBox (NULL, wsErrorMsg.c_str(), L"SKIFsvc", MB_OK | MB_ICONERROR);
+    ShowErrorMessage (lastError, (L"There was a problem starting " + wsDllFile), L"SKIFsvc");
   }
 
   return lastError;
