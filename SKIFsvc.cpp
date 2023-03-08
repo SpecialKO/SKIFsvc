@@ -30,7 +30,7 @@ ShowErrorMessage (DWORD lastError, std::wstring preMsg = L"", std::wstring winTi
   if (! preMsg.empty())
     preMsg += L"\n\n";
 
-  MessageBox (NULL, (preMsg + L"[" +std::to_wstring(lastError) + L"] " + message).c_str(),
+  MessageBox (NULL, (preMsg + L"[" + std::to_wstring (lastError) + L"] " + message).c_str(),
                      winTitle.c_str(), MB_OK | MB_ICONERROR);
 }
 
