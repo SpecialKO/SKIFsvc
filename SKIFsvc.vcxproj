@@ -15,7 +15,7 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{a62ebfc7-cde7-4967-b804-1f71e87b4a7d}</ProjectGuid>
     <RootNamespace>SKIFsvc</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
     <ProjectName>SKIFsvc</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -26,6 +26,7 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <SpectreMitigation>Spectre</SpectreMitigation>
+    <VCToolsVersion>14.36.32532</VCToolsVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -34,6 +35,7 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <SpectreMitigation>Spectre</SpectreMitigation>
+    <VCToolsVersion>14.36.32532</VCToolsVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -49,16 +51,17 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>D:\Games\Special K\Servlet\</OutDir>
+    <OutDir>Builds\</OutDir>
     <TargetName>SKIFsvc32</TargetName>
-    <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
+    <IntDir>Builds\$(Platform)-$(Configuration)\</IntDir>
+    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>D:\Games\Special K\Servlet\</OutDir>
+    <OutDir>Builds\</OutDir>
     <TargetName>SKIFsvc64</TargetName>
-    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
+    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
+    <IntDir>Builds\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -85,10 +88,10 @@
       <EnableDpiAwareness>true</EnableDpiAwareness>
     </Manifest>
     <PostBuildEvent>
-      <Command>signtool sign /n "Open Source Developer" /t http://time.certum.pl/ /fd sha256 /v "$(TargetPath)"</Command>
+      <Command>post_build.bat "$(TargetPath)" "$(TargetFileName)"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Sign the executable</Message>
+      <Message>Execute post-build events</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -120,10 +123,10 @@
       <EnableDpiAwareness>true</EnableDpiAwareness>
     </Manifest>
     <PostBuildEvent>
-      <Command>signtool sign /n "Open Source Developer" /t http://time.certum.pl/ /fd sha256 /v "$(TargetPath)"</Command>
+      <Command>post_build.bat "$(TargetPath)" "$(TargetFileName)"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Sign the executable</Message>
+      <Message>Execute post-build events</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
