@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       #matrix:
       #  config: [Release]
-      #  platform: [Win32, x64]
+      #  platform: [x86, x64]
       # Originally the build was then executed with this:
       # msbuild SKIF.sln -p:Configuration="${{ matrix.config }}" -p:Platform="${{ matrix.platform }}" -m
     
@@ -65,7 +65,7 @@ jobs:
 
     - name: Build the codebase (32-bit)
       run: |
-        msbuild SKIFsvc.sln -p:Configuration="Release" -p:Platform="Win32" -m
+        msbuild SKIFsvc.sln -p:Configuration="Release" -p:Platform="x86" -m
 
     - name: Prepare environment variables for the artifact name
       run: |
