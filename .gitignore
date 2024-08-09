@@ -35,3 +35,4 @@ packages/
 Win32/
 x64/
 .vs/
+/Builds/
