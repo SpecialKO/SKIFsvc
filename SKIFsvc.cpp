@@ -6,7 +6,7 @@
 #include <string>
 #include <memory>
 
-BOOL FileExists (LPCTSTR szPath)
+static BOOL FileExists (LPCTSTR szPath)
 {
   DWORD    dwAttrib  = GetFileAttributes (szPath);
 
@@ -14,7 +14,7 @@ BOOL FileExists (LPCTSTR szPath)
          !(dwAttrib  & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-void
+static void
 ShowErrorMessage (DWORD lastError, std::wstring preMsg = L"", std::wstring winTitle = L"")
 {
   LPWSTR messageBuffer = nullptr;
@@ -36,7 +36,7 @@ ShowErrorMessage (DWORD lastError, std::wstring preMsg = L"", std::wstring winTi
 
 // Suppress warnings about _vsnwprintf
 #pragma warning(disable:4996)
-std::wstring
+static std::wstring
 __cdecl
 SK_FormatStringW (wchar_t const* const _Format, ...)
 {
