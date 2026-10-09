@@ -124,8 +124,8 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
 
   std::wstring wsDllPath;
   std::wstring wsTestPaths[] = { 
-                                      wsDllFile,
-                          LR"(..\)" + wsDllFile,
+                                                      wsDllFile,
+                      LR"(..\)"                     + wsDllFile,
     SK_FormatStringW (LR"(%ws\%ws)",    wszExeFolder, wsDllFile.c_str()),
     SK_FormatStringW (LR"(%ws\..\%ws)", wszExeFolder, wsDllFile.c_str()),
   };
@@ -145,11 +145,15 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   // For newer versions we allow proxying the call to our 64-bit sibling
   if (_Signal.Proxy64)
   {
+    // Assume SKIFsvc64 is stored in the same folder as SKIFsvc32
+    std::wstring wsSVC64 = 
+        SK_FormatStringW (LR"(%ws\SKIFsvc64.exe)", wszExeFolder);
+
     SHELLEXECUTEINFOW
     sexi              = { };
     sexi.cbSize       = sizeof (SHELLEXECUTEINFOW);
     sexi.lpVerb       = L"OPEN";
-    sexi.lpFile       = L"SKIFsvc64.exe";
+    sexi.lpFile       = wsSVC64.c_str();
     sexi.lpParameters = lpCmdLine;
   //sexi.lpDirectory  = L"Servlet"; // Be sure to proxy our own working directory to SKIFsvc64
     sexi.nShow        = SW_HIDE;
